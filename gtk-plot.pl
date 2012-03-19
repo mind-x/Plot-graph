@@ -1,3 +1,4 @@
+#!/usr/bin/perl
 use strict;
 use warnings;
 
@@ -24,13 +25,13 @@ my $hboutf = Gtk2::HBox->new (FALSE, 5);
 
 my $lname = Gtk2::Label->new_with_mnemonic ("Name: ");
 my $ename = Gtk2::Entry->new ();
-ename_update ();
 my $lformat = Gtk2::Label->new_with_mnemonic ("Format: ");
 my $fc = Gtk2::ComboBox->new_text;
-$fc->append_text ("png");
 $fc->append_text ("jpeg");
+$fc->append_text ("png");
 $fc->append_text ("bmp");
 $fc->set_active (0);
+ename_update ();
 
 $hboutf->pack_start ($lname, FALSE, FALSE, 0);
 $hboutf->pack_start ($ename, TRUE, TRUE, 0);
@@ -40,18 +41,18 @@ $hboutf->pack_start ($fc, FALSE, FALSE, 0);
 # Контейнер для указания размера графика
 my $hbsize = Gtk2::HBox->new (FALSE, 5);
 my $lsize = Gtk2::Label->new_with_mnemonic ("Size: ");
-my $eh = Gtk2::ComboBoxEntry->new_text;
-$eh->append_text ("800");
-$eh->append_text ("1024");
-$eh->append_text ("2048");
-$eh->set_active (0);
+my $ew = Gtk2::ComboBoxEntry->new_text;
+$ew->append_text ("800");
+$ew->append_text ("1024");
+$ew->append_text ("2048");
+$ew->set_active (0);
 #$eh->set_size_request (60, 20);
 
-my $ew = Gtk2::ComboBoxEntry->new_text;
-$ew->append_text ("600");
-$ew->append_text ("768");
-$ew->append_text ("1024");
-$ew->set_active (0);
+my $eh = Gtk2::ComboBoxEntry->new_text;
+$eh->append_text ("600");
+$eh->append_text ("768");
+$eh->append_text ("1024");
+$eh->set_active (0);
 #$ew->set_size_request (60, 20);
 
 
@@ -59,9 +60,9 @@ $ew->set_active (0);
 #$spacer->set_size_request (100, 0);
 
 $hbsize->pack_start ($lsize, FALSE, FALSE, 0);
-$hbsize->pack_start ($eh, FALSE, FALSE, 0);
-$hbsize->pack_start (Gtk2::Label->new_with_mnemonic ("x"), FALSE, FALSE, 0);
 $hbsize->pack_start ($ew, FALSE, FALSE, 0);
+$hbsize->pack_start (Gtk2::Label->new_with_mnemonic ("x"), FALSE, FALSE, 0);
+$hbsize->pack_start ($eh, FALSE, FALSE, 0);
 # $hbsize->pack_start ($spacer, TRUE, TRUE, 0);
 
 # Контейнер для указания входного файла
@@ -88,7 +89,7 @@ $button->signal_connect (clicked => sub {
     my $width = $ew->get_active_text ();
     my $in = $binf->get_filename ();
     #print "$name $format $height $width $in\n";
-    my $status = system ("sh plot-graph.sh -o $name -f $format -i $in -w $width -h $height");
+    my $status = system ("sh plot-graph.sh -o $name.$format -f $format -i $in -w $width -h $height");
     print "$status\n";
     $prev->set_from_pixbuf (Gtk2::Gdk::Pixbuf->new_from_file_at_size("$name.$format", 480, 320));
     $imgframe->show ();

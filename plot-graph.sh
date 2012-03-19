@@ -23,7 +23,7 @@ then
   exit $E_OPTERROR
 fi
 #Выбираем необходимые параметры
-while getopts ":h:w:i:o:" Option
+while getopts ":h:w:i:f:o:" Option
 do
   case $Option in
     h) high="$OPTARG";;
