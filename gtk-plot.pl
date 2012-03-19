@@ -32,6 +32,7 @@ $fc->append_text ("png");
 $fc->append_text ("bmp");
 $fc->set_active (0);
 ename_update ();
+my $fname = $ename->get_text . "." . $fc->get_active_text;
 
 $hboutf->pack_start ($lname, FALSE, FALSE, 0);
 $hboutf->pack_start ($ename, TRUE, TRUE, 0);
@@ -78,21 +79,24 @@ $imgframe->set_border_width (5);
 my $prev = Gtk2::Image->new;
 $imgframe->add ($prev);
 
-# Creates a new button with a label "Hello World".
-my $button = Gtk2::Button->new ("Create plot");
+my $mb = Gtk2::Button->new ("Mail to");
+$mb->signal_connect (clicked => sub { show_mail_dialog ($window, $fname)});
+$mb->set_sensitive (FALSE);
 
+my $button = Gtk2::Button->new ("Create plot");
 $button->signal_connect (clicked => sub {
     my ($button) = @_;
     my $name = $ename->get_text ();
     my $format = $fc->get_active_text ();
+    $fname = "$name.$format";
     my $height = $eh->get_active_text ();
     my $width = $ew->get_active_text ();
     my $in = $binf->get_filename ();
-    #print "$name $format $height $width $in\n";
-    my $status = system ("sh plot-graph.sh -o $name.$format -f $format -i $in -w $width -h $height");
+    my $status = system ("sh plot-graph.sh -o $fname -f $format -i $in -w $width -h $height");
     print "$status\n";
-    $prev->set_from_pixbuf (Gtk2::Gdk::Pixbuf->new_from_file_at_size("$name.$format", 480, 320));
+    $prev->set_from_pixbuf (Gtk2::Gdk::Pixbuf->new_from_file_at_size("$fname", 480, 320));
     $imgframe->show ();
+    $mb->set_sensitive (TRUE);
     ename_update ();
 			 });
 
@@ -100,6 +104,7 @@ my $qb = Gtk2::Button->new ("Quit");
 $qb->signal_connect (clicked => sub { Gtk2->main_quit; });
 
 my $hbb = Gtk2::HBox->new (FALSE, 5);
+$hbb->pack_start ($mb, FALSE, FALSE, 0);
 $hbb->pack_end ($qb, FALSE, FALSE, 0);
 $hbb->pack_end ($button, FALSE, FALSE, 0);
 
@@ -127,4 +132,107 @@ sub ename_update {
     $mon = $mon +1;
     ($mon =~ m/\d{2}/)||($mon = "0".$mon);
     $ename->set_text ("image-$mday-$mon-$year\_$hour:$min:$sec");
+}
+
+sub show_mail_dialog {
+    my ($parent, $filename) = @_;
+    print "$filename\n";
+    my $dialog = Gtk2::Dialog->new ("Mail to...", $parent, [qw/modal destroy-with-parent/],
+			    'gtk-ok' => 'accept',
+			    'gtk-cancel' => 'reject');
+    my $vbox = $dialog->vbox;
+    my $counter = 1;
+
+    my $h1 = Gtk2::HBox->new (FALSE, 5);
+    my $l1 = Gtk2::Label->new_with_mnemonic ("Mail $counter: ");
+
+    my $e1 = Gtk2::ComboBoxEntry->new_text;
+    $e1->grab_focus;
+
+    open FILE, ">>".$ENV{HOME}."/.plot_mail_cache" or die $!;
+    open FILE, "<".$ENV{HOME}."/.plot_mail_cache" or die $!;
+    my @mcache = <FILE>;
+
+    # удаление переводов строк
+    foreach (@mcache) {
+	$_ =~ s/\R//g;
+	$e1->append_text ($_);
+    }
+    close FILE;
+
+    $h1->pack_start ($l1, FALSE, FALSE, 0);
+    $h1->pack_start ($e1, TRUE, TRUE, 0);
+    $h1->show_all;
+
+    $vbox->pack_start ($h1, FALSE, FALSE, 0);
+
+    my %mhash = ($counter => [\$h1, \$e1]);
+
+    my $addb = Gtk2::Button->new_from_stock ('gtk-add');
+    my $delb = Gtk2::Button->new_from_stock ('gtk-delete');
+    $delb->set_sensitive (FALSE);
+
+    $addb->signal_connect (clicked => sub {
+	$counter++;
+	if ($counter > 1) { $delb->set_sensitive (TRUE); }
+	my $hbox = Gtk2::HBox->new (FALSE, 5);
+	my $label = Gtk2::Label->new_with_mnemonic ("Mail $counter: ");
+	my $entry = Gtk2::ComboBoxEntry->new_text;
+
+	foreach (@mcache) {
+	    $entry->append_text ($_);
+	}
+
+	$hbox->pack_start ($label, FALSE, FALSE, 0);
+	$hbox->pack_start ($entry, TRUE, TRUE, 0);
+	$hbox->show_all;
+
+	$vbox->pack_start ($hbox, FALSE, FALSE, 0);
+	$entry->grab_focus;
+
+	$mhash{$counter} = [\$hbox, \$entry];
+			   });
+
+    $delb->signal_connect (clicked => sub {
+	my $dhb = $mhash{$counter}[0];
+	$$dhb->destroy ();
+	$dialog->resize (1, 1);
+	delete ($mhash{$counter});
+	$counter--;
+	if ($counter <= 1) { $delb->set_sensitive (FALSE); }
+			   });
+
+    my $hb1 = Gtk2::HBox->new (FALSE, 5);
+    $hb1->pack_end ($addb, FALSE, FALSE, 0);
+    $hb1->pack_end ($delb, FALSE, FALSE, 0);
+    $vbox->pack_end ($hb1, FALSE, FALSE, 0);
+    $vbox->show_all ();
+    if ('accept' eq $dialog->run) {
+	my @marr = (); # массив выбранных почтовых ящиков
+	for (my $i = 1; $i <= $counter; $i++) {
+	    my $mail = $mhash{$i}[1];
+	    push (@marr, $$mail->get_active_text);
+	}
+	# преобразование массива в строку
+	my $str = "<" . join (">,<", @marr) . ">";
+	print "$str\n";
+
+	# Удаление дубликатов из массива и его сортировка
+	push (@mcache, @marr);
+	my %hash   = map { $_, 1 } @mcache;
+	@mcache = keys %hash;
+	@mcache = sort (@mcache);
+
+	# запись массива в файл
+	open FILE, ">", $ENV{HOME}."/.plot_mail_cache" or die $!;
+	foreach (@mcache) {
+	    print FILE $_."\n";
+	}
+	close FILE;
+
+	print "mail sent\n";
+    } else {
+	print "canceled\n";
+    }
+    $dialog->destroy;
 }
