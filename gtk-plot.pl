@@ -88,7 +88,7 @@ $button->signal_connect (clicked => sub {
     my $width = $ew->get_active_text ();
     my $in = $binf->get_filename ();
     #print "$name $format $height $width $in\n";
-    my $status = system ("sh plot-graph.sh -n $name -f $format -i $in -w $width -h $height");
+    my $status = system ("sh plot-graph.sh -o $name -f $format -i $in -w $width -h $height");
     print "$status\n";
     $prev->set_from_pixbuf (Gtk2::Gdk::Pixbuf->new_from_file_at_size("$name.$format", 480, 320));
     $imgframe->show ();
