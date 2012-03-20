@@ -100,7 +100,7 @@ $button->signal_connect (clicked => sub {
     ename_update ();
 			 });
 
-my $qb = Gtk2::Button->new ("Quit");
+my $qb = Gtk2::Button->new_from_stock ('gtk-quit');
 $qb->signal_connect (clicked => sub { Gtk2->main_quit; });
 
 my $hbb = Gtk2::HBox->new (FALSE, 5);
